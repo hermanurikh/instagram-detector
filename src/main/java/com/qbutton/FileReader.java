@@ -7,9 +7,8 @@ import java.nio.file.Paths;
 import java.util.Optional;
 
 public class FileReader {
-    public static Optional<String> read(String stringPath) {
+    public static Optional<String> read(Path path) {
         try {
-            Path path = Paths.get(stringPath);
             boolean exists = path.toFile().exists();
             return exists
                     ? Optional.of(String.join("", Files.readAllLines(path)))

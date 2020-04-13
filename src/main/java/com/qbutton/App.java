@@ -1,35 +1,39 @@
 package com.qbutton;
 
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Set;
 
 public class App {
 
-    private static final String PATH = "/Users/gurikh/Documents/Instagram/Subscribers/%s/subscribers.txt";
-
     public static void main(String[] args) {
 
         String today = DateProvider.today();
-        String yesterday = DateProvider.yesterday();
-
-        String todayPath = String.format(PATH, today);
-        String yesterdayPath = String.format(PATH, yesterday);
-
+        Path todayPath = PathProvider.provide(today);
         Optional<String> todayFile = FileReader.read(todayPath);
         if (!todayFile.isPresent()) {
             throw new IllegalArgumentException("today's file should not be absent");
         }
 
-        Optional<String> yesterdayFile = FileReader.read(yesterdayPath);
+        int previousDaysAllowedGap = 30;
+        String lastDay = today;
+        Optional<String> previousFile = Optional.empty();
+        while (previousDaysAllowedGap > 0 && !previousFile.isPresent()) {
+            String possibleFileName = DateProvider.dayBefore(lastDay);
+            Path possiblePath = PathProvider.provide(possibleFileName);
+            previousFile = FileReader.read(possiblePath);
+            previousDaysAllowedGap--;
+            lastDay = possibleFileName;
+        }
 
-        if (!yesterdayFile.isPresent()) {
-            System.out.println("No data for yesterday. Aborting detection." );
+        if (!previousFile.isPresent()) {
+            System.out.println("No data for previous day. Aborting detection." );
             return;
         }
 
         Set<String> todayFollowers = HtmlFileParser.getFollowers(todayFile.get());
-        Set<String> yesterdayFollowers = HtmlFileParser.getFollowers(yesterdayFile.get());
+        Set<String> previousFollowers = HtmlFileParser.getFollowers(previousFile.get());
 
-        SubscribersComparator.compare(yesterdayFollowers, todayFollowers);
+        SubscribersComparator.compare(previousFollowers, todayFollowers);
     }
 }
